@@ -228,7 +228,7 @@ class Control_Param():
         self.lidar_heading = 0.0
 
 
-        self.wpt_bound = 7
+        self.wpt_bound = 20
         self.wpt_x_avoidance = 0.0
         self.wpt_y_avoidance = 0.0
 
