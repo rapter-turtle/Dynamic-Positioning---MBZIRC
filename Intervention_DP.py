@@ -173,10 +173,10 @@ class Control_Param():
 
         self.desired_yaw = 0
 
-        self.dock_switch = 1
+        self.dock_switch = 2
         self.before_dock_switch = 0
 
-        self.dock_distance = 25.0
+        self.dock_distance = 20.0
         self.avoid_distance = 35.0
 
         self.wpt_distance = 30.0 #############
@@ -209,7 +209,7 @@ class Control_Param():
         self.found_heading = 0
 
         self.filtering_time = 0.0
-        self.filtering_thres = 1.0  
+        self.filtering_thres = 40 
         self.filtering_swithch = 0      
 
         self.global_vel_x = 0.0
@@ -249,10 +249,21 @@ class Control_Param():
         self.converge_t = 3
         self.bound = 30.0
 
-        self.T_con_I = 0.0
-        self.T_con_s2 = 10.0
-        self.Y_Ki = 0.1
+        self.raw_ey = 0.0
+        self.raw_ey_before = 0.0
+        self.s = 0.0
 
+        self.Y_Ki = 0.01
+        self.T_con_I = 0.0
+        self.max_T_con_I = 50
+
+        self.T_con_s2 = 0.0
+        self.start = 0
+
+        self.raw_queue = []
+        self.sec = 0.0
+
+        self.avoidance = 0.0
         self.raw_queue = []
         self.max_T_con_I = 100.0
         self.ey_pub = rospy.Publisher('/ey', Float64, queue_size=1)
@@ -382,14 +393,14 @@ class Control_Param():
         # self.del_time = abs(self.before_time - (self.sec + self.nanosec))
         # self.dtime = self.dtime + self.del_time
         # self.before_time = self.sec + self.nanosec
-        self.sec = rospy.get_time()
+        # self.sec = rospy.get_time()
 
-        if self.before_time == 0.0:
-            self.before_time = self.sec
+        # if self.before_time == 0.0:
+        #     self.before_time = self.sec
         
-        self.del_time = abs(self.before_time - self.sec)
-        self.dtime = self.dtime + self.del_time
-        self.before_time = self.sec 
+        # self.del_time = abs(self.before_time - self.sec)
+        # self.dtime = self.dtime + self.del_time
+        # self.before_time = self.sec 
 
         
         if self.dtime > 0.1:
@@ -537,51 +548,16 @@ class Control_Param():
                     self.heading_search_time += self.dtime
                     self.target_dtime += self.dtime 
 
-                    if self.heading_search_time <= 1.1:
+                    if self.heading_search_time <= 0.2:
                         print("------------- Search Heading -------------")
                         if self.target_dtime > 1.0:
 
-                            #################################################################################################### -- heading_on
-                            # if self.rel_x != self.rel_x_before and self.rel_y != self.rel_y_before:
-                            #     self.rel_vx = (self.rel_x - self.rel_x_before)
-                            #     self.rel_vy = (self.rel_y - self.rel_y_before)
 
-                            #     self.rel_x_before = self.rel_x
-                            #     self.rel_y_before = self.rel_y
-
-                            #     self.heading = math.atan2(self.rel_vy, self.rel_vx)
-
-                            #     while self.lidar_heading > math.pi:
-                            #         self.lidar_heading -= 2*math.pi
-                            #     while self.lidar_heading < -math.pi:
-                            #         self.lidar_heading += 2*math.pi
-
-                            #     while self.heading > math.pi:
-                            #         self.heading -= 2*math.pi
-                            #     while self.heading < -math.pi:
-                            #         self.heading += 2*math.pi
-
-
-                            #     heading_error = self.heading - self.lidar_heading
-
-                            #     while heading_error > math.pi:
-                            #         heading_error -= 2*math.pi
-                            #     while heading_error < -math.pi:
-                            #         heading_error += 2*math.pi
-
-                            #     if heading_error > 0.5*math.pi or heading_error < -0.5*math.pi:
-                            #         self.lidar_heading += math.pi
-
-                            #     while self.lidar_heading > math.pi:
-                            #         self.lidar_heading -= 2*math.pi
-                            #     while self.lidar_heading < -math.pi:
-                            #         self.lidar_heading += 2*math.pi
-                                
-                            #     new_heading_error = self.heading - self.lidar_heading
-                                ####################################################################################################3
-
-                                if self.lidar_heading > 0.5*math.pi or self.lidar_heading < -0.5*math.pi:
+                                if self.lidar_heading > 0.5*math.pi:
                                     self.lidar_heading += math.pi
+                                if  self.lidar_heading < -0.5*math.pi:
+                                    self.lidar_heading += math.pi
+
 
                                 while self.lidar_heading > math.pi:
                                     self.lidar_heading -= 2*math.pi
@@ -849,7 +825,7 @@ class Control_Param():
 
 
 
-                self.dtime = 0.0
+            self.dtime = 0.0
 
             
 
@@ -913,6 +889,19 @@ def main():
         param.publish_del_time = abs(param.publish_before_time - param.publish_sec)
         param.publish_dtime = param.publish_dtime + param.publish_del_time
         param.publish_before_time = param.publish_sec 
+
+
+        param.sec = rospy.get_time()
+
+        if param.before_time == 0.0:
+            param.before_time = param.sec
+        
+        param.del_time = abs(param.before_time - param.sec)
+        param.dtime = param.dtime + param.del_time
+        param.before_time = param.sec 
+
+
+
 
         Thrust_right = Int16()
         Angle_right = Float32()
