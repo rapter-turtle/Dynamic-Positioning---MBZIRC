@@ -117,7 +117,7 @@ class Control_Param():
         self.USV_pose_yaw = 0.0
 
         self.U = 0.0
-        self.U_const = 110
+        self.U_const = 140
         self.U_delta = 0.0
         self.U_N = 0.0
         self.T_con = 0.0
@@ -155,9 +155,9 @@ class Control_Param():
         self.N_Kd = 0.0 
         self.X_Kp = 50.0
         self.X_Kd = 1.0     
-        self.X_Kp_positive = 100.0
-        self.X_Kp_negative = 100.0        
-        self.U_default = 150
+        self.X_Kp_positive = 50.0
+        self.X_Kp_negative = 50.0        
+        self.U_default = 170
         self.K_beta = 0.001
         self.lamda = 10
 
@@ -188,7 +188,7 @@ class Control_Param():
         self.dock_switch = 2
         self.before_dock_switch = 0
 
-        self.dock_distance = 35.0
+        self.dock_distance = 40.0
         self.avoid_distance = 50.0
 
         self.wpt_distance = 30.0 #############
@@ -204,7 +204,7 @@ class Control_Param():
         self.real_thrust_left = 0.0
         self.before_thrust_right = 0.0
         self.before_thrust_left = 0.0
-        self.thrust_bound = 50.0
+        self.thrust_bound = 70.0
 
 
         self.rel_vx = 0.0
@@ -221,7 +221,7 @@ class Control_Param():
         self.found_heading = 0
 
         self.filtering_time = 0.0
-        self.filtering_thres = 60.0  
+        self.filtering_thres = 40.0  
         self.filtering_swithch = 0      
 
         self.global_vel_x = 0.0
@@ -281,6 +281,9 @@ class Control_Param():
         self.start = 0
 
         self.raw_queue = []
+        self.sec = 0.0
+
+        self.avoidance = 0.0
 
         
 
@@ -335,8 +338,9 @@ class Control_Param():
                     
                     if self.filtering_time < self.filtering_thres:
                         self.filtering_time += self.dtime 
-                        print("########## No TRG ################")
+                        print("########## No TRG 1 ################")
                         print(self.filtering_time)
+                        print(self.dtime)
                         print("##################################")
                     else:
                         flag_5 = Int32()
@@ -348,11 +352,12 @@ class Control_Param():
                     self.filtering_swithch = 0
                     self.filtering_time = 0.0 
             
-            if msg.data[0] == 0:
+            else:
                 if self.filtering_time < self.filtering_thres:
                     self.filtering_time += self.dtime
-                    print("########## No TRG ################")
+                    print("########## No TRG 2 ################")
                     print(self.filtering_time)
+                    print(self.dtime)
                     print("##################################")                    
                 else: 
                     flag_5 = Int32()
@@ -360,7 +365,9 @@ class Control_Param():
                     self.no_trg_pub.publish(flag_5)
                     self.filtering_swithch = 0
                     self.filtering_time = 0.0    
-
+        else:
+            self.filtering_time = 0.0
+            self.filtering_swithch = 0
 
     def sub_wp_ID(self, msg):
         self.ID = msg.data
@@ -445,16 +452,16 @@ class Control_Param():
         # self.dtime = self.dtime + self.del_time
         # self.before_time = self.sec + self.nanosec
 
-        self.sec = rospy.get_time()
+        # self.sec = rospy.get_time()
 
-        if self.before_time == 0.0:
-            self.before_time = self.sec
+        # if self.before_time == 0.0:
+        #     self.before_time = self.sec
         
-        self.del_time = abs(self.before_time - self.sec)
-        self.dtime = self.dtime + self.del_time
-        self.before_time = self.sec 
-        
+        # self.del_time = abs(self.before_time - self.sec)
+        # self.dtime = self.dtime + self.del_time
+        # self.before_time = self.sec 
 
+        
         
         if self.dtime > 0.1:
             # print("a")
@@ -670,6 +677,15 @@ class Control_Param():
 
                                 self.target_dtime = 0.0
                     else:
+                        if self.rel_yaw < 0.0 and self.rel_yaw > -180*math.pi/180:
+                            if self.rel_yaw > -90*math.pi/180:
+                                self.avoidance = 1.0
+                            else:
+                                self.avoidance = 2.0
+                        else:
+                            self.avoidance = 0.0
+
+
                         self.found_heading = 1
                         self.heading_search_time = 0.0
                         self.target_dtime = 0.0
@@ -679,10 +695,16 @@ class Control_Param():
 
                 elif self.found_heading == 1:
                     self.start = 0
-                    if self.rel_yaw < 0.0 and self.rel_yaw > -160*math.pi/180:
+                    if self.avoidance > 0:
 
-                        self.wpt_x_avoidance = (self.rel_x + (self.avoid_distance-1)*math.cos(self.rel_yaw - math.pi))
-                        self.wpt_y_avoidance = (self.rel_y + (self.avoid_distance)*math.sin(self.rel_yaw - math.pi))
+                        if self.avoidance == 1:
+                            self.wpt_x_avoidance = (self.rel_x + (self.avoid_distance-1)*math.cos(self.rel_yaw - math.pi))
+                            self.wpt_y_avoidance = (self.rel_y + (self.avoid_distance)*math.sin(self.rel_yaw - math.pi))
+                        elif self.avoidance ==2:
+                            self.wpt_x_avoidance = (self.rel_x + (self.avoid_distance-1)*math.cos(self.rel_yaw))
+                            self.wpt_y_avoidance = (self.rel_y + (self.avoid_distance)*math.sin(self.rel_yaw))
+
+
 
                         self.angle_e = math.atan2(self.wpt_y_avoidance, self.wpt_x_avoidance)
                         
@@ -712,11 +734,13 @@ class Control_Param():
                         print("################## Avoidance ##################")
                         print('Ship ID : ', self.ID)
                         print("Found_heading : ", self.found_heading)
+                        print("Avoidance switch : ", self.avoidance)
                         print("wpt_x" , self.wpt_x_avoidance)
                         print("wpt_y" , self.wpt_y_avoidance)
                         print("angle : ", self.angle_e*180/math.pi)
                         print("rel heading : ", self.rel_yaw)
-                        print("U_N : ", self.U_N,", T_con : ", self.T_con)
+                        # print("U_N : ", self.U_N,", T_con : ", self.T_con)
+                        print("Distance : ", math.sqrt(self.wpt_x_avoidance*self.wpt_x_avoidance + self.wpt_y_avoidance*self.wpt_y_avoidance))
                         # print(" thrust right : ", self.real_thrust_right, ", thrust left : ", self.real_thrust_left)
 
 
@@ -766,8 +790,9 @@ class Control_Param():
                     print("wpt_y" , wpt_y)
                     print("angle : ", self.angle_e*180/math.pi)
                     print("rel yaw : ", self.rel_yaw*180/math.pi)
-                    print("U_N : ", self.U_N,", T_con : ", self.T_con)
+                    # print("U_N : ", self.U_N,", T_con : ", self.T_con)
                     # print(" thrust right : ", self.real_thrust_right, ", thrust left : ", self.real_thrust_left)
+                    print("Distance : ", math.sqrt(wpt_x*wpt_x + wpt_y*wpt_y))
 
                     if math.sqrt(wpt_x*wpt_x + wpt_y*wpt_y) < 12:
                         self.start = 1
@@ -812,9 +837,9 @@ class Control_Param():
                     print("wpt_y" , wpt_y)
                     print("angle : ", self.angle_e*180/math.pi)
                     print("rel yaw : ", self.rel_yaw*180/math.pi)
-                    print("U_N : ", self.U_N,", T_con : ", self.T_con)
+                    # print("U_N : ", self.U_N,", T_con : ", self.T_con)
                     # print(" thrust right : ", self.real_thrust_right, ", thrust left : ", self.real_thrust_left)
-
+                    print("Distance : ", math.sqrt(wpt_x*wpt_x + wpt_y*wpt_y))
 
         ########################################################################## 1st control ##########################################################################
                 elif math.sqrt(self.e_y*self.e_y + self.e_x*self.e_x) < self.wpt_distance and self.found_heading ==2 and self.start == 1:
@@ -979,7 +1004,7 @@ class Control_Param():
                         self.pub_dp_state.publish(pub_once)
 
 
-                self.dtime = 0.0
+            self.dtime = 0.0
 
             
 
@@ -1028,7 +1053,6 @@ def main():
     rospy.Subscriber('/target_heading', Float64, param.sub_Target_heading, queue_size = 1)
 
 
-
     rate = rospy.Rate(200) # 10 Hz
 
 
@@ -1037,6 +1061,7 @@ def main():
 
         # param.publish_time = param.publish_time + param.del_time
 	
+
         param.publish_sec = rospy.get_time()
 
         if param.publish_before_time == 0.0:
@@ -1045,6 +1070,19 @@ def main():
         param.publish_del_time = abs(param.publish_before_time - param.publish_sec)
         param.publish_dtime = param.publish_dtime + param.publish_del_time
         param.publish_before_time = param.publish_sec 
+
+
+
+        param.sec = rospy.get_time()
+
+        if param.before_time == 0.0:
+            param.before_time = param.sec
+        
+        param.del_time = abs(param.before_time - param.sec)
+        param.dtime = param.dtime + param.del_time
+        param.before_time = param.sec 
+
+
 
 
         Thrust_right = Int16()
@@ -1112,7 +1150,7 @@ def main():
                     pub_lt.publish(rotate_Thrust_left)
                     pub_la.publish(rotate_Angle_left)                
                 #print(param.publish_dtime)
-                param.publish_dtime = 0.0
+            param.publish_dtime = 0.0
             # print(param.publish_time)
 
         rate.sleep()
