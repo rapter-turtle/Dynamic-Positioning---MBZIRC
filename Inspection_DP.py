@@ -204,7 +204,7 @@ class Control_Param():
         self.real_thrust_left = 0.0
         self.before_thrust_right = 0.0
         self.before_thrust_left = 0.0
-        self.thrust_bound = 70.0
+        self.thrust_bound = 50.0
 
 
         self.rel_vx = 0.0
@@ -354,6 +354,7 @@ class Control_Param():
             
             else:
                 if self.filtering_time < self.filtering_thres:
+                    self.filtering_swithch = 1
                     self.filtering_time += self.dtime
                     print("########## No TRG 2 ################")
                     print(self.filtering_time)
@@ -655,8 +656,11 @@ class Control_Param():
                             #     new_heading_error = self.heading - self.lidar_heading
                                 ####################################################################################################3
 
-                                if self.lidar_heading > 0.5*math.pi or self.lidar_heading < -0.5*math.pi:
+                                if self.lidar_heading > 0.5*math.pi:
                                     self.lidar_heading += math.pi
+                                if  self.lidar_heading < -0.5*math.pi:
+                                    self.lidar_heading += math.pi
+
 
                                 while self.lidar_heading > math.pi:
                                     self.lidar_heading -= 2*math.pi

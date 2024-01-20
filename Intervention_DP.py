@@ -209,7 +209,7 @@ class Control_Param():
         self.found_heading = 0
 
         self.filtering_time = 0.0
-        self.filtering_thres = 40 
+        self.filtering_thres = 4000 
         self.filtering_swithch = 0      
 
         self.global_vel_x = 0.0
@@ -316,10 +316,34 @@ class Control_Param():
 
                 if check == 0:
                     self.filtering_swithch = 1
-                                        
+                    
+                    if self.filtering_time < self.filtering_thres:
+                        self.filtering_time += self.dtime 
+                        print("########## No TRG 1 ################")
+                        print(self.filtering_time)
+                        print(self.dtime)
+                        print("##################################")
+                    else:
+                        self.filtering_swithch = 0
+                        self.filtering_time = 0.0                        
                 else:
                     self.filtering_swithch = 0
                     self.filtering_time = 0.0 
+            
+            else:
+                if self.filtering_time < self.filtering_thres:
+                    self.filtering_swithch = 1
+                    self.filtering_time += self.dtime
+                    print("########## No TRG 2 ################")
+                    print(self.filtering_time)
+                    print(self.dtime)
+                    print("##################################")                    
+                else: 
+                    self.filtering_swithch = 0
+                    self.filtering_time = 0.0    
+        else:
+            self.filtering_time = 0.0
+            self.filtering_swithch = 0
 
 
     def sub_wp_ID(self, msg):
